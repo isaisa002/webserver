@@ -7,34 +7,58 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 //create the WebServer class to receive connections on port 5000. Each connection is handled by a master thread that puts the descriptor in a bounded buffer. A pool of worker threads take jobs from this buffer if there are any to handle the connection.
 public class WebServer {
+    //Max of 100 threads in thread pool    
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(100);
+
 
     public void start() throws java.io.IOException{
-        //Create a server socket
-        ServerSocket serverSocket = new ServerSocket(5000);
-        while(true){
-            System.out.println("Waiting for a client to connect...");
-            //Accept a connection from a client
-            Socket clientSocket = serverSocket.accept();
-            System.out.println("New client...");
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            OutputStream out = clientSocket.getOutputStream();
-
-            String request = in.readLine();
-            if (request != null) {
-                if (request.startsWith("GET")) {
-                    // Handle GET request
-                    handleGetRequest(out);
-                } else if (request.startsWith("POST")) {
-                    // Handle POST request
-                    handlePostRequest(in, out);
-                }
+        try (//Create a server socket
+        ServerSocket serverSocket = new ServerSocket(5000)) {
+            while(true){
+                System.out.println("Waiting for a client to connect...");
+                //Accept a connection from a client
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("New client...");
+                
+                //Submit client connection to thread pool
+                 // Submit client handling task to the thread pool
+                 threadPool.submit(() -> {
+                    try {
+                        handleClient(clientSocket);
+                    } catch (IOException e) {
+                        System.err.println("Error handling client: " + e.getMessage());
+                    }
+                });
+                
             }
+        } finally {
+            threadPool.shutdown(); // Shut down the thread pool
+        }
+    }
+    
+    private void handleClient(Socket clientSocket) throws IOException {
+        try( BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                OutputStream out = clientSocket.getOutputStream()){
 
-            in.close();
-            out.close();
+                String request = in.readLine();
+                if (request != null) {
+                    if (request.startsWith("GET")) {
+                        // Handle GET request
+                        handleGetRequest(out);
+                    } else if (request.startsWith("POST")) {
+                        // Handle POST request
+                        handlePostRequest(in, out);
+                    }
+                    
+                }
+                in.close();
+                out.close();
+        } finally {
             clientSocket.close();
         }
     }
@@ -73,6 +97,7 @@ public class WebServer {
         out.write(response.getBytes());
         out.flush();
     }
+
 
     private static void handlePostRequest(BufferedReader in, OutputStream out) throws IOException {
         System.out.println("Handling post request");
