@@ -67,8 +67,8 @@ public class SimpleWebClientDeadlock implements Runnable {
         // Create multiple clients to test the server
         for (int i = 0; i < 500; i++) {
             System.out.println("Creating client " + i);
-            Thread thread1 = new Thread(new SimpleWebClientDeadlock(123, 345));
-            Thread thread2 = new Thread(new SimpleWebClientDeadlock(345, 123));
+            Thread thread1 = new Thread(new SimpleWebClientDeadlock(123, 321));
+            Thread thread2 = new Thread(new SimpleWebClientDeadlock(321, 123));
             thread1.start();
             thread2.start();
         }
