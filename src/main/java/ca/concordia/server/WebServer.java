@@ -11,13 +11,13 @@ import java.util.concurrent.locks.ReentrantLock;
 public class WebServer {
     //Allow to quickly change port number if neeed
     private static final int PORT = 5000;
-    private static final int MAX_CONCURRENT_THREADS = 50;
+    private static final int MAX_THREADS_IN_SYSTEM = 100;
 
 
     // Ajust size of threadpool dynamically to ensure server can handle all concurrent requests effieciently
     // Threads are created as needed, and idle threads are terminated after 60 seconds
     private final ExecutorService threadPool = Executors.newCachedThreadPool();
-    private final Semaphore connectionLimiter = new Semaphore(MAX_CONCURRENT_THREADS); // Limit connections
+    private final Semaphore connectionLimiter = new Semaphore(MAX_THREADS_IN_SYSTEM); // Limit connections
    
    
    //THREAD-SAFE MECHANISM: CONCURRENT HASH MAP -> Race condition and deadlock prevention
